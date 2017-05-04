@@ -9,6 +9,8 @@ import android.graphics.Paint;
 import android.graphics.Paint.FontMetrics;
 import android.graphics.PixelFormat;
 import android.graphics.PorterDuff.Mode;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -28,6 +30,13 @@ import java.util.concurrent.TimeUnit;
  * @author anylife.zlb@gmail.com
  */
 public class ScrollTextView extends SurfaceView implements SurfaceHolder.Callback {
+    public interface ScrollTextViewDelegate {
+        void scrollTextWillBeginScroll(ScrollTextView scrollTextView);
+    }
+    
+    public ScrollTextViewDelegate delegate;
+    
+    
     private final String TAG = "ScrollTextView";
     // surface Handle onto a raw buffer that is being managed by the screen compositor.
     private SurfaceHolder surfaceHolder;   //providing access and control over this SurfaceView's underlying surface.
@@ -57,6 +66,8 @@ public class ScrollTextView extends SurfaceView implements SurfaceHolder.Callbac
     
     private ScheduledExecutorService scheduledExecutorService;
     private ScrollTextThread textThread;
+    
+    private int currentIndex = 0;
     
     /**
      * constructs 1
@@ -225,6 +236,10 @@ public class ScrollTextView extends SurfaceView implements SurfaceHolder.Callbac
         return textThread;
     }
     
+    public int getCurrentIndex() {
+        return currentIndex;
+    }
+    
     /**
      * touch to stop / start
      */
@@ -264,6 +279,15 @@ public class ScrollTextView extends SurfaceView implements SurfaceHolder.Callbac
      */
     private void drawVerteclScroll() {
         for (int textIndex = 0; textIndex < texts.size(); textIndex++) {
+            currentIndex = textIndex;
+            if (delegate != null) {
+                (new Handler(Looper.getMainLooper())).post(new Runnable() {
+                    @Override
+                    public void run() {
+                        delegate.scrollTextWillBeginScroll(ScrollTextView.this);
+                    }
+                });
+            }
             List<String> strings = new ArrayList<>();
             int start = 0, end = 0;
             String text = texts.get(textIndex);
